@@ -2,6 +2,7 @@ let allTracks = [];
 let visibleTracks = [];
 let currentTrackIndex = -1;
 let isShuffledView = false;
+let layoutMap = {};
 
 const trackListEl = document.getElementById("track-list");
 const searchEl = document.getElementById("search");
@@ -39,7 +40,6 @@ function sortTracks(tracks) {
 function filterTracks(tracks, term) {
   const q = term.trim().toLowerCase();
   if (!q) return tracks;
-
   return tracks.filter((track) =>
     (track.title || "").toLowerCase().includes(q),
   );
@@ -52,6 +52,10 @@ function shuffleArray(items) {
     [arr[i], arr[j]] = [arr[j], arr[i]];
   }
   return arr;
+}
+
+function rand(min, max) {
+  return Math.random() * (max - min) + min;
 }
 
 function formatTime(seconds) {
@@ -71,17 +75,25 @@ function updateNowPlaying(track) {
   nowYearEl.textContent = track?.year || "-";
 }
 
-function getTrackIndexInVisible(track) {
-  return visibleTracks.findIndex(
-    (t) =>
-      t.fileName === track.fileName &&
-      t.title === track.title &&
-      t.year === track.year,
-  );
+function getTrackId(track) {
+  return track.fileName || `${track.title}-${track.year}`;
 }
 
-function rand(min, max) {
-  return Math.random() * (max - min) + min;
+function getTrackIndexInVisible(track) {
+  return visibleTracks.findIndex((t) => getTrackId(t) === getTrackId(track));
+}
+
+function ensureLayoutForTrack(track) {
+  const id = getTrackId(track);
+  if (!layoutMap[id]) {
+    const mobile = window.innerWidth <= 980;
+    layoutMap[id] = {
+      lane: mobile ? rand(16, 84) : rand(20, 80),
+      width: mobile ? "calc(100% - 20px)" : `${rand(200, 300)}px`,
+      nudge: rand(-4, 4),
+    };
+  }
+  return layoutMap[id];
 }
 
 function renderTracks(tracks) {
@@ -92,28 +104,19 @@ function renderTracks(tracks) {
     return;
   }
 
-  tracks.forEach((track, visualIndex) => {
+  tracks.forEach((track) => {
     const trackIndex = getTrackIndexInVisible(track);
     const isActive = trackIndex === currentTrackIndex;
+    const layout = ensureLayoutForTrack(track);
 
     const article = document.createElement("article");
-    article.className = "timeline-item electric-item";
-
-    const mobile = window.innerWidth <= 980;
-    const lane = mobile ? rand(20, 78) : rand(18, 82);
-    const side = mobile ? "right" : Math.random() > 0.5 ? "right" : "left";
-    const cardWidth = mobile ? "calc(100% - 42px)" : `${rand(180, 300)}px`;
-    const verticalNudge = rand(-4, 5);
-
-    article.style.setProperty("--lane-x", `${lane}%`);
-    article.style.setProperty("--card-width", cardWidth);
-    article.style.setProperty("--nudge-y", `${verticalNudge}px`);
-    article.dataset.side = side;
-    article.dataset.index = String(visualIndex);
+    article.className = "timeline-item";
+    article.style.setProperty("--lane-x", `${layout.lane}%`);
+    article.style.setProperty("--card-width", layout.width);
+    article.style.setProperty("--nudge-y", `${layout.nudge}px`);
 
     article.innerHTML = `
       <button class="timeline-card ${isActive ? "active" : ""}" type="button">
-        <div class="timeline-marker"></div>
         <div class="timeline-year">${track.year || "----"}</div>
         <h2 class="timeline-title">${track.title || "Untitled"}</h2>
       </button>
@@ -179,6 +182,7 @@ function resetTimelineOrder() {
   const currentSearch = searchEl.value.trim();
   visibleTracks = filterTracks(allTracks, currentSearch);
   isShuffledView = false;
+  layoutMap = {};
   currentTrackIndex = -1;
   audio.pause();
   audio.removeAttribute("src");
@@ -192,6 +196,7 @@ function shuffleTracks() {
   const baseTracks = filterTracks(allTracks, currentSearch);
   visibleTracks = shuffleArray(baseTracks);
   isShuffledView = true;
+  layoutMap = {};
   currentTrackIndex = -1;
   audio.pause();
   audio.removeAttribute("src");
@@ -233,9 +238,7 @@ function drawElectricLine() {
   const old = trackListEl.querySelector(".electric-svg");
   if (old) old.remove();
 
-  const cards = [
-    ...trackListEl.querySelectorAll(".electric-item .timeline-card"),
-  ];
+  const cards = [...trackListEl.querySelectorAll(".timeline-card")];
   if (!cards.length) return;
 
   const rect = trackListEl.getBoundingClientRect();
@@ -306,12 +309,12 @@ function drawElectricLine() {
   svg.appendChild(defs);
 
   const fullPoints = [startPoint];
-  const startSegments = makeElectricSegments(startPoint, points[0], 10, 10, 12);
-  fullPoints.push(...startSegments);
+  fullPoints.push(...makeElectricSegments(startPoint, points[0], 10, 10, 12));
 
   for (let i = 1; i < points.length; i += 1) {
-    const seg = makeElectricSegments(points[i - 1], points[i], 8, 20, 12);
-    fullPoints.push(...seg);
+    fullPoints.push(
+      ...makeElectricSegments(points[i - 1], points[i], 8, 20, 12),
+    );
   }
 
   const coreD = drawPathD(fullPoints);
@@ -331,7 +334,6 @@ function drawElectricLine() {
   svg.appendChild(glow);
   svg.appendChild(mid);
   svg.appendChild(core);
-
   trackListEl.prepend(svg);
 }
 
@@ -377,6 +379,7 @@ searchEl.addEventListener("input", () => {
 });
 
 window.addEventListener("resize", () => {
+  layoutMap = {};
   renderTracks(visibleTracks);
 });
 

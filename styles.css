@@ -5,11 +5,7 @@
   --text: #f3f5f7;
   --muted: #9eabb9;
   --border: rgba(255, 255, 255, 0.08);
-  --accent: #dbe1ea;
   --silver: #dbe1ea;
-  --silver-dim: #9fa8b5;
-  --electric: #cfd8e8;
-  --electric-2: #9fb4cf;
   --shadow: rgba(0, 0, 0, 0.28);
   --image-wash: rgba(14, 18, 24, 0.34);
   --image-wash-2: rgba(24, 30, 39, 0.18);
@@ -146,18 +142,10 @@ body {
   stroke-linejoin: round;
 }
 
-.electric-branch {
-  fill: none;
-  stroke: rgba(230, 238, 252, 0.58);
-  stroke-width: 1.4;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  filter: url(#electricGlow);
-}
-
 .era-break,
 .era-line,
-.era-label {
+.era-label,
+.timeline-marker {
   display: none;
 }
 
@@ -169,18 +157,15 @@ body {
   transform: translateY(var(--nudge-y, 0));
 }
 
-.timeline-marker {
-  display: none;
-}
-
 .timeline-card {
   position: relative;
   width: min(var(--card-width), 42vw);
+  margin-left: calc(var(--lane-x) - min(var(--card-width), 42vw) / 2);
   cursor: pointer;
   background: linear-gradient(to bottom, var(--panel), var(--panel-2));
   border: 1px solid rgba(255, 255, 255, 0.09);
   border-radius: 14px;
-  padding: 8px 10px;
+  padding: 10px 12px;
   color: var(--text);
   box-shadow: 0 8px 20px var(--shadow);
   transition:
@@ -188,12 +173,7 @@ body {
     border-color 0.16s ease,
     background 0.16s ease,
     box-shadow 0.16s ease;
-  text-align: left;
-}
-
-.timeline-item[data-side="left"] .timeline-card,
-.timeline-item[data-side="right"] .timeline-card {
-  margin-left: calc(var(--lane-x) - min(var(--card-width), 42vw) / 2);
+  text-align: center;
 }
 
 .timeline-card:hover {
@@ -221,7 +201,7 @@ body {
   letter-spacing: 0.2em;
   text-transform: uppercase;
   color: var(--silver);
-  margin-bottom: 2px;
+  margin-bottom: 4px;
   text-shadow:
     0 0 10px rgba(216, 222, 232, 0.22),
     0 0 20px rgba(120, 140, 165, 0.12);
@@ -233,7 +213,7 @@ body {
   margin: 0;
   font-size: 0.95rem;
   font-weight: 600;
-  line-height: 1.2;
+  line-height: 1.25;
 }
 
 .timeline-empty {
@@ -425,9 +405,10 @@ body {
 
 @media (max-width: 980px) {
   .header-image {
-    height: 220px;
-    object-fit: cover;
+    height: 240px;
+    object-fit: contain;
     object-position: center center;
+    background: #0b0d10;
   }
 
   .header-image-wrap::after {
